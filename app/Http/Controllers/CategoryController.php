@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class CategoryController extends Controller
 {
@@ -22,7 +24,7 @@ class CategoryController extends Controller
     {
         $items = Category::all();
         foreach ($items as $item) {
-            $item->image =$this->url . $item->image;
+            $item->image =$this->url . '600_'.$item->image;
         }
         return response()->json($items) ->header('Content-Type', 'application/json; charset=utf-8');
     }
@@ -32,18 +34,26 @@ class CategoryController extends Controller
         if (!file_exists(public_path($this->upload))) {
             mkdir(public_path($this->upload), 0777);
         }
-        if ($request->hasFile('image')) {
+        if ($request->hasFile('image') && $request->input('name') != '') {
             $file = $request->file('image');
-            $ext = $file->getClientOriginalExtension();
-            $fileName = uniqid() . '.' .$ext;
-            $destinationPath =public_path( $this->upload);
-            $file->move($destinationPath,$fileName);
+            $fileName = uniqid() . '.webp';
+            $manager = new ImageManager(new Driver());
+            $sizes = [50,150,300,600,1200];
+            foreach ($sizes as $size) {
+                // read image from file system
+                $imageSave = $manager->read($file);
+                // resize image proportionally to 600px width
+                $imageSave->scale(width: $size);
+                $path = public_path($this->upload.$size."_".$fileName);
+                // save modified image in new format
+                $imageSave->toWebp()->save($path);
+            }
             $item = Category::create(['name' => $request->input('name') , 'image' => $fileName]);
-            $item->image =$this->url . $item->image;
+            $item->image =$this->url . '600_'. $item->image;
             return response()->json($item, 201);
          }
         else
-            return response()->json("Image file not found", 404);
+            return response()->json("Bad request", 400);
     }
 
     public function getById(int $categoryId): \Illuminate\Http\JsonResponse
