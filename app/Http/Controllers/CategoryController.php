@@ -38,7 +38,6 @@ class CategoryController extends Controller
                 $imageSave->toWebp()->save($path);
             }
             $item = Category::create(['name' => $request->input('name') , 'image' => $fileName]);
-
             return response()->json($item, 201);
          }
         else
@@ -48,7 +47,6 @@ class CategoryController extends Controller
     public function getById(int $categoryId): \Illuminate\Http\JsonResponse
     {
         $item = Category::find($categoryId);
-        $item->image =$this->url . $item->image;
         return response()->json($item);
     }
 
