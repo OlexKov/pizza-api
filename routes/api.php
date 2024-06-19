@@ -11,5 +11,5 @@ Route::get('/user', function (Request $request) {
 Route::get('/getall', [CategoryController::class, 'getall']);
 Route::get('/get/{id}', [CategoryController::class, 'getById']);
 Route::post('/create', [CategoryController::class, 'create']);
-Route::put('/update/{id}', [CategoryController::class, 'update']);
+Route::post('/update/{id}', [CategoryController::class, 'update']);
 Route::delete('/delete/{id}', [CategoryController::class, 'delete']);

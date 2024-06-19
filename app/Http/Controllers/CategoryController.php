@@ -4,13 +4,37 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 
 class CategoryController extends Controller
 {
     protected string $upload;
+    protected $sizes = [50,150,300,600,1200];
 
+    protected function deteteImages(int $id){
+        $item = Category::find($id);
+        foreach ($this->sizes as $size) {
+            $filePath = public_path($this->upload.$size."_".$item->image);
+            if(file_exists( $filePath)){
+                unlink($filePath);
+            }
+        }
+    }
+
+    protected function saveImages( UploadedFile $file){
+        $fileName = uniqid() . '.webp';
+        $manager = new ImageManager(new Driver());
+
+        foreach ($this->sizes as $size) {
+            $imageSave = $manager->read($file);
+            $imageSave->scale(width: $size);
+            $path = public_path($this->upload.$size."_".$fileName);
+            $imageSave->toWebp()->save($path);
+        }
+        return $fileName;
+    }
     public function __construct()
     {
         $this-> upload = env('UPLOAD_DIR');
@@ -28,15 +52,7 @@ class CategoryController extends Controller
         }
         if ($request->hasFile('image') && $request->input('name') != '') {
             $file = $request->file('image');
-            $fileName = uniqid() . '.webp';
-            $manager = new ImageManager(new Driver());
-            $sizes = [50,150,300,600,1200];
-            foreach ($sizes as $size) {
-                $imageSave = $manager->read($file);
-                $imageSave->scale(width: $size);
-                $path = public_path($this->upload.$size."_".$fileName);
-                $imageSave->toWebp()->save($path);
-            }
+            $fileName = $this->saveImages($file);
             $item = Category::create(['name' => $request->input('name') , 'image' => $fileName]);
             return response()->json($item, 201);
          }
@@ -50,14 +66,30 @@ class CategoryController extends Controller
         return response()->json($item);
     }
 
-    public function update(Request $request, Category $category)
+    public function update(Request $request, $id): \Illuminate\Http\JsonResponse
     {
-        //
+        $item = Category::find($id);
+        if($item && $request->input('name') != ''){
+            if ( $request->hasFile('image') ) {
+                $file = $request->file('image');
+                $this-> deteteImages($id);
+                $item->image = $this->saveImages($file);
+            }
+            $item->name = $request->input('name');
+            $item->save();
+            return response()->json([
+                'message' => 'Category updated successfully!',
+                'category' => $item
+            ], 200);
+        }
+        else
+            return response()->json("Bad request", 400);
     }
 
-    public function delete(int $categoryId): \Illuminate\Http\JsonResponse
+    public function delete(int $id): \Illuminate\Http\JsonResponse
     {
-        Category::destroy($categoryId);
+        $this->deteteImages($id);
+        Category::destroy($id);
         return response()->json(null, 204);
     }
 }
