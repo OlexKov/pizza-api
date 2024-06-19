@@ -26,7 +26,6 @@ class CategoryController extends Controller
     protected function saveImages( UploadedFile $file){
         $fileName = uniqid() . '.webp';
         $manager = new ImageManager(new Driver());
-
         foreach ($this->sizes as $size) {
             $imageSave = $manager->read($file);
             $imageSave->scale(width: $size);
