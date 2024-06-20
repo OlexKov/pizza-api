@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CategoryController extends Controller
 {
@@ -38,10 +39,36 @@ class CategoryController extends Controller
     {
         $this-> upload = env('UPLOAD_DIR');
     }
-    public function getall(): \Illuminate\Http\JsonResponse
+    public function getall()
     {
         $items = Category::all();
-        return response()->json($items) ->header('Content-Type', 'application/json; charset=utf-8');
+        $data = json_encode($items);
+        $dataSize = strlen($data);
+
+
+       // return response($data, 200)
+       //     ->header('Content-Type', 'application/json')
+      //      ->header('Content-Length', $dataSize)
+       //     ->header('Accept-Ranges', 'bytes');
+
+        $response = new StreamedResponse(function () use ($data, $dataSize) {
+            $chunkSize = 12; // Розмір частини даних
+            $totalChunks = ceil($dataSize / $chunkSize);
+
+            for ($i = 0; $i < $totalChunks; $i++) {
+                $start = $i * $chunkSize;
+                $chunk = substr($data, $start, $chunkSize);
+                echo $chunk;
+                ob_flush();
+                flush();
+                usleep(80000); // Затримка 50 мс (можна налаштувати за потребою)
+            }
+        });
+
+        $response->headers->set('Content-Type', 'application/json');
+        $response->headers->set('Content-Length', $dataSize);
+        return $response;
+
     }
 
     public function create(Request $request): \Illuminate\Http\JsonResponse
