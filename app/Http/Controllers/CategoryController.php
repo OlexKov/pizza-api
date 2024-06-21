@@ -51,8 +51,8 @@ class CategoryController extends Controller
       //      ->header('Content-Length', $dataSize)
        //     ->header('Accept-Ranges', 'bytes');
 
-        $response = new StreamedResponse(function () use ($data, $dataSize) {
-            $chunkSize = 12; // Розмір частини даних
+      $response = new StreamedResponse(function () use ($data, $dataSize) {
+            $chunkSize =ceil($dataSize / 10);
             $totalChunks = ceil($dataSize / $chunkSize);
 
             for ($i = 0; $i < $totalChunks; $i++) {
@@ -61,12 +61,13 @@ class CategoryController extends Controller
                 echo $chunk;
                 ob_flush();
                 flush();
-                usleep(80000); // Затримка 50 мс (можна налаштувати за потребою)
+                usleep(80000);
             }
         });
 
         $response->headers->set('Content-Type', 'application/json');
         $response->headers->set('Content-Length', $dataSize);
+        $response->headers->set('Accept-Ranges', 'bytes');
         return $response;
 
     }
