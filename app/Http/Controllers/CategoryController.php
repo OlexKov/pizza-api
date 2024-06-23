@@ -72,6 +72,42 @@ class CategoryController extends Controller
 
     }
 
+    public function getList(Request $request)
+    {
+        $perPage = intval($request->query('perPage',2));
+        $search = $request->query('search');
+        $page = $request->query('page',1);
+        $query = Category::query();
+        if($search){
+            $query-> where('name', 'like', '%'.$search.'%');
+        }
+        $data = $query->paginate($perPage, ['*'], 'page', $page);
+        $json = json_encode($data);
+        $dataSize = strlen($json);
+       // return response($json, 200)
+      //        ->header('Content-Type', 'application/json')
+       //       ->header('Content-Length', $dataSize)
+       //       ->header('Accept-Ranges', 'bytes');
+        $response = new StreamedResponse(function () use ($json, $dataSize) {
+            $chunkSize =ceil($dataSize / 10);
+            $totalChunks = ceil($dataSize / $chunkSize);
+
+            for ($i = 0; $i < $totalChunks; $i++) {
+                $start = $i * $chunkSize;
+                $chunk = substr($json, $start, $chunkSize);
+                echo $chunk;
+                ob_flush();
+                flush();
+                usleep(80000);
+            }
+        });
+
+        $response->headers->set('Content-Type', 'application/json');
+        $response->headers->set('Content-Length', $dataSize);
+        $response->headers->set('Accept-Ranges', 'bytes');
+        return $response;
+    }
+
     public function create(Request $request): \Illuminate\Http\JsonResponse
     {
         if (!file_exists(public_path($this->upload))) {
