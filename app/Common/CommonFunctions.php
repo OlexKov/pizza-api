@@ -6,7 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Intervention\Image\Drivers\Gd\Driver;
 
 const  sizes = [50,150,300,600,1200];
-function saveImage(UploadedFile $file){
+function saveImage(UploadedFile $file):string{
 
     $fileName = uniqid() . '.webp';
     $manager = new ImageManager(new Driver());
