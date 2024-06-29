@@ -17,3 +17,4 @@ Route::post('/update/{id}', [CategoryController::class, 'update']);
 Route::delete('/delete/{id}', [CategoryController::class, 'delete']);
 
 Route::get('/products', [ProductController::class, 'getAll']);
+Route::post('/products', [ProductController::class, 'create']);

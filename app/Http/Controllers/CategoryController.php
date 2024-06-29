@@ -8,71 +8,49 @@ use Illuminate\Http\UploadedFile;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+include(app_path().'/Common/CommonFunctions.php');
 
 class CategoryController extends Controller
 {
     protected string $upload;
-    protected $sizes = [50,150,300,600,1200];
-
-    protected function deteteImages(int $id){
-        $item = Category::find($id);
-        foreach ($this->sizes as $size) {
-            $filePath = public_path($this->upload.$size."_".$item->image);
-            if(file_exists( $filePath)){
-                unlink($filePath);
-            }
-        }
-    }
-
-    protected function saveImages( UploadedFile $file){
-        $fileName = uniqid() . '.webp';
-        $manager = new ImageManager(new Driver());
-        foreach ($this->sizes as $size) {
-            $imageSave = $manager->read($file);
-            $imageSave->scale(width: $size);
-            $path = public_path($this->upload.$size."_".$fileName);
-            $imageSave->toWebp()->save($path);
-        }
-        return $fileName;
-    }
     public function __construct()
     {
         $this-> upload = env('UPLOAD_DIR');
     }
-    public function getall()
+    public function getall(): \Symfony\Component\HttpFoundation\Response
     {
         $items = Category::all();
         $data = json_encode($items);
         $dataSize = strlen($data);
 
 
-       // return response($data, 200)
-       //     ->header('Content-Type', 'application/json')
-      //      ->header('Content-Length', $dataSize)
-       //     ->header('Accept-Ranges', 'bytes');
+        return response($data, 200)
+            ->header('Content-Type', 'application/json')
+            ->header('Content-Length', $dataSize)
+            ->header('Accept-Ranges', 'bytes');
 
-      $response = new StreamedResponse(function () use ($data, $dataSize) {
-            $chunkSize =ceil($dataSize / 10);
-            $totalChunks = ceil($dataSize / $chunkSize);
-
-            for ($i = 0; $i < $totalChunks; $i++) {
-                $start = $i * $chunkSize;
-                $chunk = substr($data, $start, $chunkSize);
-                echo $chunk;
-                ob_flush();
-                flush();
-                usleep(80000);
-            }
-        });
-
-        $response->headers->set('Content-Type', 'application/json');
-        $response->headers->set('Content-Length', $dataSize);
-        $response->headers->set('Accept-Ranges', 'bytes');
-        return $response;
+//      $response = new StreamedResponse(function () use ($data, $dataSize) {
+//            $chunkSize =ceil($dataSize / 10);
+//            $totalChunks = ceil($dataSize / $chunkSize);
+//
+//            for ($i = 0; $i < $totalChunks; $i++) {
+//                $start = $i * $chunkSize;
+//                $chunk = substr($data, $start, $chunkSize);
+//                echo $chunk;
+//                ob_flush();
+//                flush();
+//                usleep(80000);
+//            }
+//        });
+//
+//        $response->headers->set('Content-Type', 'application/json');
+//        $response->headers->set('Content-Length', $dataSize);
+//        $response->headers->set('Accept-Ranges', 'bytes');
+//        return $response;
 
     }
 
-    public function getList(Request $request)
+    public function getList(Request $request): \Symfony\Component\HttpFoundation\Response
     {
         $perPage = intval($request->query('perPage',2));
         $search = $request->query('search');
@@ -84,28 +62,10 @@ class CategoryController extends Controller
         $data = $query->paginate($perPage, ['*'], 'page', $page);
         $json = json_encode($data);
         $dataSize = strlen($json);
-       // return response($json, 200)
-      //        ->header('Content-Type', 'application/json')
-       //       ->header('Content-Length', $dataSize)
-       //       ->header('Accept-Ranges', 'bytes');
-        $response = new StreamedResponse(function () use ($json, $dataSize) {
-            $chunkSize =ceil($dataSize / 10);
-            $totalChunks = ceil($dataSize / $chunkSize);
-
-            for ($i = 0; $i < $totalChunks; $i++) {
-                $start = $i * $chunkSize;
-                $chunk = substr($json, $start, $chunkSize);
-                echo $chunk;
-                ob_flush();
-                flush();
-                usleep(80000);
-            }
-        });
-
-        $response->headers->set('Content-Type', 'application/json');
-        $response->headers->set('Content-Length', $dataSize);
-        $response->headers->set('Accept-Ranges', 'bytes');
-        return $response;
+        return response($json, 200)
+              ->header('Content-Type', 'application/json')
+              ->header('Content-Length', $dataSize)
+              ->header('Accept-Ranges', 'bytes');
     }
 
     public function create(Request $request): \Illuminate\Http\JsonResponse
@@ -115,7 +75,7 @@ class CategoryController extends Controller
         }
         if ($request->hasFile('image') && $request->input('name') != '') {
             $file = $request->file('image');
-            $fileName = $this->saveImages($file);
+            $fileName = saveImage($file);
             $item = Category::create(['name' => $request->input('name') , 'image' => $fileName]);
             return response()->json($item, 201);
          }
@@ -135,8 +95,8 @@ class CategoryController extends Controller
         if($item && $request->input('name') != ''){
             if ( $request->hasFile('image') ) {
                 $file = $request->file('image');
-                $this-> deteteImages($id);
-                $item->image = $this->saveImages($file);
+                deteteImages($id);
+                $item->image = saveImage($file);
             }
             $item->name = $request->input('name');
             $item->save();
@@ -151,7 +111,7 @@ class CategoryController extends Controller
 
     public function delete(int $id): \Illuminate\Http\JsonResponse
     {
-        $this->deteteImages($id);
+        deteteImages($id);
         Category::destroy($id);
         return response()->json(null, 204);
     }
