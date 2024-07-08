@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Common\ImageWorker;
 use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-include(app_path().'/Common/CommonFunctions.php');
+
+
 
 class CategoryController extends Controller
 {
@@ -75,7 +73,7 @@ class CategoryController extends Controller
         }
         if ($request->hasFile('image') && $request->input('name') != '') {
             $file = $request->file('image');
-            $fileName = saveImage($file);
+            $fileName =ImageWorker::save($file);
             $item = Category::create(['name' => $request->input('name') , 'image' => $fileName]);
             return response()->json($item, 201);
          }
@@ -95,8 +93,8 @@ class CategoryController extends Controller
         if($item && $request->input('name') != ''){
             if ( $request->hasFile('image') ) {
                 $file = $request->file('image');
-                deteteImages($id);
-                $item->image = saveImage($file);
+                ImageWorker::delete($id);
+                $item->image = ImageWorker::save($file);
             }
             $item->name = $request->input('name');
             $item->save();

@@ -2,15 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Common\ImageWorker;
 use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-
-
-
-include(app_path().'/Common/CommonFunctions.php');
-
 class ProductController extends Controller
 {
     protected string $upload;
@@ -67,7 +63,7 @@ class ProductController extends Controller
             ProductImage::create([
                 'product_id' => $product->id,
                 'priority' => $key,
-                'name' => saveImage($value)
+                'name' => ImageWorker::save($value)
             ]);
         }
         return response()->json($product, 201);
